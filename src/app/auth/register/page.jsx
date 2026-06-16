@@ -191,7 +191,7 @@ export default function RegisterForm() {
       <div className="relative hidden w-[45%] flex-col justify-between overflow-hidden p-12 lg:flex">
         <div className="pointer-events-none absolute inset-0">
           <Image
-            src="/globe.png"
+            src="/iamges/globe.png"
             alt=""
             fill
             className="object-cover object-center opacity-40"
@@ -207,10 +207,10 @@ export default function RegisterForm() {
           <Link href="/">
             <h2 className="text-3xl font-black">
               <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                Hire
+                Next
               </span>
               <span className="bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
-                Loop
+                Hire
               </span>
             </h2>
           </Link>
@@ -286,10 +286,10 @@ export default function RegisterForm() {
           <Link href="/">
             <h2 className="text-3xl font-black">
               <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
-                Hire
+                Next
               </span>
               <span className="bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
-                Loop
+                Hire
               </span>
             </h2>
           </Link>
@@ -313,7 +313,7 @@ export default function RegisterForm() {
             <p className={`text-sm ${isLight ? "text-gray-500" : "text-gray-400"}`}>
               Already have an account?{" "}
               <Link
-                href="/login"
+                href="/auth/login"
                 className="font-semibold text-violet-500 transition hover:text-violet-400"
               >
                 Sign in
