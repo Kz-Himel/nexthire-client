@@ -57,7 +57,7 @@ export default function FeaturedJobs() {
         >
           <p className="mb-3 flex items-center justify-center gap-2 text-xs font-bold uppercase tracking-widest text-violet-400">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-400" />
-            Smart Job Discovery
+            Featured Jobs
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-400" />
           </p>
           <h2 className={`text-4xl font-black lg:text-5xl ${isLight ? "text-gray-900" : "text-white"}`}>
