@@ -51,13 +51,13 @@ export default function Navbar({ user }) {
             <>
               <div className="h-6 w-px bg-white/15" />
               <Link
-                href="/login"
+                href="/auth/login"
                 className="font-medium text-violet-400 transition hover:text-violet-300"
               >
                 Sign In
               </Link>
               <Link
-                href="/register"
+                href="/auth/register"
                 className="rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-500 px-7 py-3 font-medium text-white shadow-lg shadow-violet-500/20 transition hover:scale-105"
               >
                 Get Started
@@ -110,9 +110,9 @@ export default function Navbar({ user }) {
             <div className="h-px bg-white/10" />
             {!user ? (
               <>
-                <Link href="/login" className="text-violet-400">Sign In</Link>
+                <Link href="/auth/login" className="text-violet-400">Sign In</Link>
                 <Link
-                  href="/register"
+                  href="/auth/register"
                   className="rounded-xl bg-gradient-to-r from-violet-600 to-indigo-500 px-5 py-3 text-center font-medium text-white"
                 >
                   Get Started

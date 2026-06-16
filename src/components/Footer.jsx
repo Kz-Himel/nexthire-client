@@ -179,7 +179,7 @@ export default function Footer() {
         {/* Bottom */}
         <div className="mt-20 flex flex-col items-center justify-between gap-5 border-t border-white/5 pt-8 text-sm text-gray-600 lg:flex-row">
           <p>
-            © {new Date().getFullYear()} HireLoop. All rights
+            © {new Date().getFullYear()} NextHire. All rights
             reserved.
           </p>
 
