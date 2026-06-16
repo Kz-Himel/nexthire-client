@@ -1,3 +1,4 @@
+import CtaSection from "@/components/home/CtaSection";
 import FeaturedJobs from "@/components/home/FeaturedJobs";
 import FeaturesSection from "@/components/home/FeaturesSection";
 import HeroSection from "@/components/home/HeroSection";
@@ -9,6 +10,7 @@ export default function Home() {
       <HeroSection />
       <FeaturedJobs />
       <FeaturesSection />
+      <CtaSection />
     </div>
   );
 }
