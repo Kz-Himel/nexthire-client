@@ -2,16 +2,17 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { Button, Card, CardBody, CardFooter, Chip, Switch } from "@heroui/react";
+import { Button, Card, Chip, Switch } from "@heroui/react";
 import { HiCheck } from "react-icons/hi2";
 import { useState } from "react";
 import { useTheme } from "next-themes";
-import { RiCrownFill, RiBarChartFill, RiFlashlightFill } from "react-icons/ri";
+import { FaCrown } from "react-icons/fa6";
+import { IoBarChart, IoFlash } from "react-icons/io5";
 
 const plans = [
   {
     name: "Starter",
-    icon: RiCrownFill,
+    icon: IoFlash,
     iconColor: "text-amber-400",
     price: { monthly: 0, yearly: 0 },
     desc: "Start building your insights hub:",
@@ -28,7 +29,7 @@ const plans = [
   },
   {
     name: "Growth",
-    icon: RiBarChartFill,
+    icon: IoBarChart,
     iconColor: "text-violet-400",
     price: { monthly: 17, yearly: 12 },
     desc: "Start building your insights hub:",
@@ -45,7 +46,7 @@ const plans = [
   },
   {
     name: "Premium",
-    icon: RiFlashlightFill,
+    icon: FaCrown,
     iconColor: "text-blue-400",
     price: { monthly: 99, yearly: 72 },
     desc: "Start building your insights hub:",
@@ -83,6 +84,7 @@ export default function PricingSection() {
             Pricing
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-400" />
           </p>
+
           <h1 className={`mb-4 text-5xl font-black lg:text-6xl ${isLight ? "text-gray-900" : "text-white"}`}>
             Pay for the leverage,<br />
             <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
@@ -90,34 +92,24 @@ export default function PricingSection() {
             </span>
           </h1>
 
-          {/* Billing Toggle using HeroUI Switch */}
+          {/* Toggle */}
           <div className="mt-10 flex items-center justify-center gap-4">
             <span className={`text-sm font-medium ${!yearly ? (isLight ? "text-gray-900" : "text-white") : "text-gray-500"}`}>
               Monthly
             </span>
-            <Switch
-              isSelected={yearly}
-              onValueChange={setYearly}
-              classNames={{
-                wrapper: "bg-violet-600",
-              }}
-            />
+
+            <Switch isSelected={yearly} onValueChange={setYearly} />
+
             <span className={`flex items-center gap-2 text-sm font-medium ${yearly ? (isLight ? "text-gray-900" : "text-white") : "text-gray-500"}`}>
               Yearly
-              <Chip
-                size="sm"
-                classNames={{
-                  base: "bg-pink-500/20",
-                  content: "text-pink-400 text-[10px] font-bold",
-                }}
-              >
+              <Chip size="sm" classNames={{ content: "text-pink-400 text-[10px] font-bold" }}>
                 25%
               </Chip>
             </span>
           </div>
         </motion.div>
 
-        {/* Plan Cards */}
+        {/* Cards */}
         <div className="grid gap-6 lg:grid-cols-3">
           {plans.map((plan, i) => {
             const Icon = plan.icon;
@@ -129,7 +121,6 @@ export default function PricingSection() {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="relative"
               >
                 <Card
                   className={`h-full border ${plan.cardBg} ${
@@ -141,8 +132,9 @@ export default function PricingSection() {
                   }`}
                   shadow="none"
                 >
-                  <CardBody className="gap-6 p-7">
-                    {/* Plan header */}
+                  {/* CardBody replacement */}
+                  <div className="gap-6 p-7">
+                    {/* Header */}
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
@@ -154,13 +146,12 @@ export default function PricingSection() {
                           {plan.name}
                         </h3>
                       </div>
+
                       <div className="text-right">
                         <span className={`text-4xl font-black ${isLight ? "text-gray-900" : "text-white"}`}>
                           ${price}
                         </span>
-                        <span className={`text-sm ${isLight ? "text-gray-500" : "text-gray-500"}`}>
-                          /month
-                        </span>
+                        <span className="text-sm text-gray-500">/month</span>
                       </div>
                     </div>
 
@@ -169,22 +160,26 @@ export default function PricingSection() {
                       <p className={`mb-4 text-sm font-medium ${isLight ? "text-gray-700" : "text-gray-300"}`}>
                         {plan.desc}
                       </p>
+
                       <ul className="flex flex-col gap-3">
                         {plan.features.map((f) => (
                           <li key={f} className="flex items-start gap-3">
-                            <div className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border ${
+                            <div className={`mt-0.5 flex h-5 w-5 items-center justify-center rounded border ${
                               isLight ? "border-gray-300 bg-gray-100" : "border-white/10 bg-white/5"
                             }`}>
                               <HiCheck className={`h-3 w-3 ${isLight ? "text-gray-600" : "text-gray-400"}`} />
                             </div>
-                            <span className={`text-sm ${isLight ? "text-gray-600" : "text-gray-400"}`}>{f}</span>
+                            <span className={`text-sm ${isLight ? "text-gray-600" : "text-gray-400"}`}>
+                              {f}
+                            </span>
                           </li>
                         ))}
                       </ul>
                     </div>
-                  </CardBody>
+                  </div>
 
-                  <CardFooter className="px-7 pb-7 pt-0">
+                  {/* CardFooter replacement */}
+                  <div className="px-7 pb-7 pt-0">
                     <Button
                       as={Link}
                       href={plan.href}
@@ -201,7 +196,7 @@ export default function PricingSection() {
                     >
                       {plan.cta}
                     </Button>
-                  </CardFooter>
+                  </div>
                 </Card>
               </motion.div>
             );
