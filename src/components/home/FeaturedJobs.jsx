@@ -61,14 +61,14 @@ export default function FeaturedJobs() {
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-violet-400" />
           </p>
           <h2 className={`text-4xl font-black lg:text-5xl ${isLight ? "text-gray-900" : "text-white"}`}>
-            The roles you'd never<br />
+            The roles youd never<br />
             <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
               find by searching
             </span>
           </h2>
         </motion.div>
 
-        <div className="grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3">
           {jobs.map((job, i) => (
             <motion.div
               key={job.id}

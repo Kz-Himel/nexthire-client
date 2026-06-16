@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { HiMagnifyingGlass, HiMapPin } from "react-icons/hi2";
-import { RiSparkleFill } from "react-icons/ri";
+import { IoSparklesOutline } from "react-icons/io5";
 
 const popularSearches = ["UI/UX Designer", "React Developer", "Product Manager", "Data Scientist"];
 
@@ -15,7 +15,7 @@ export default function HeroSection() {
       <div className="pointer-events-none absolute inset-0 flex items-end justify-center overflow-hidden">
         <div className="relative h-[700px] w-full max-w-4xl">
           <Image
-            src="/globe.png"
+            src="/images/globe.png"
             alt="Globe"
             fill
             className="object-contain object-bottom opacity-70"
@@ -27,7 +27,7 @@ export default function HeroSection() {
       {/* CTA BG */}
       <div className="pointer-events-none absolute inset-0">
         <Image
-          src="/cta-bg.png"
+          src="/images/cta-bg.png"
           alt=""
           fill
           className="object-cover opacity-20"
@@ -47,7 +47,7 @@ export default function HeroSection() {
           transition={{ duration: 0.5 }}
           className="mb-8 inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm text-violet-300"
         >
-          <RiSparkleFill className="h-4 w-4 text-violet-400" />
+          <IoSparklesOutline className="h-4 w-4 text-violet-400" />
           AI-Powered Job Matching Platform
         </motion.div>
 
