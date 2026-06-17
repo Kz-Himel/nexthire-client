@@ -2,670 +2,339 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
 import { useTheme } from "next-themes";
 import { signUp } from "@/lib/auth-client";
 import {
+  Form,
+  TextField,
+  Label,
   Input,
+  FieldError,
+  Description,
   Button,
-  Checkbox,
-//   Divider,
-  RadioGroup,
-  Radio,
 } from "@heroui/react";
 import {
+  HiUser,
   HiEnvelope,
   HiLockClosed,
   HiEye,
   HiEyeSlash,
-  HiUser,
-  HiArrowRight,
   HiExclamationCircle,
   HiCheckCircle,
 } from "react-icons/hi2";
 import { FcGoogle } from "react-icons/fc";
-import { RiUserSearchFill } from "react-icons/ri";
-import { FaGithub, FaBriefcase } from "react-icons/fa";
-import { IoSparklesOutline } from "react-icons/io5";
+import { RiGithubFill, RiUserSearchFill, RiBriefcaseFill } from "react-icons/ri";
 
-/* ── Password strength helper ── */
-function getStrength(password) {
-  if (!password) return { score: 0, label: "", color: "" };
+function StrengthBar({ password }) {
   let score = 0;
   if (password.length >= 8) score++;
   if (/[A-Z]/.test(password)) score++;
   if (/[0-9]/.test(password)) score++;
   if (/[^A-Za-z0-9]/.test(password)) score++;
 
-  const map = [
-    { label: "", color: "" },
-    { label: "Weak", color: "bg-red-500" },
-    { label: "Fair", color: "bg-orange-400" },
-    { label: "Good", color: "bg-yellow-400" },
-    { label: "Strong", color: "bg-green-500" },
-  ];
-  return { score, ...map[score] };
-}
+  const colors = ["", "bg-red-500", "bg-orange-400", "bg-yellow-400", "bg-green-500"];
+  const labels = ["", "Weak", "Fair", "Good", "Strong"];
+  const textColors = ["", "text-red-400", "text-orange-400", "text-yellow-400", "text-green-400"];
 
-/* ── Single validation rule row ── */
-function Rule({ met, text }) {
+  if (!password) return null;
+
   return (
-    <li className="flex items-center gap-2 text-xs">
-      <HiCheckCircle
-        className={`h-3.5 w-3.5 transition ${
-          met ? "text-green-400" : "text-gray-600"
-        }`}
-      />
-      <span className={met ? "text-gray-300" : "text-gray-600"}>{text}</span>
-    </li>
+    <div className="mt-2.5 space-y-2">
+      <div className="flex gap-1.5">
+        {[1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+              i <= score ? colors[score] : "bg-white/10"
+            }`}
+          />
+        ))}
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex flex-wrap gap-x-4 gap-y-1">
+          {[
+            { met: password.length >= 8, text: "8+ chars" },
+            { met: /[A-Z]/.test(password), text: "Uppercase" },
+            { met: /[0-9]/.test(password), text: "Number" },
+            { met: /[^A-Za-z0-9]/.test(password), text: "Special" },
+          ].map((r) => (
+            <span key={r.text} className={`flex items-center gap-1 text-xs ${r.met ? "text-green-400" : "text-gray-600"}`}>
+              <HiCheckCircle className="h-3 w-3" />
+              {r.text}
+            </span>
+          ))}
+        </div>
+        {score > 0 && (
+          <span className={`text-xs font-semibold ${textColors[score]}`}>{labels[score]}</span>
+        )}
+      </div>
+    </div>
   );
 }
 
-export default function RegisterForm() {
+export default function RegisterPage() {
   const router = useRouter();
   const { theme } = useTheme();
   const isLight = theme === "light";
 
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    role: "job_seeker",
-  });
-  const [showPassword, setShowPassword] = useState(false);
+  const [role, setRole] = useState("job_seeker");
+  const [showPass, setShowPass] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
+  const [serverError, setServerError] = useState("");
 
-  const strength = getStrength(form.password);
-
-  const rules = [
-    { met: form.password.length >= 8, text: "At least 8 characters" },
-    { met: /[A-Z]/.test(form.password), text: "One uppercase letter" },
-    { met: /[0-9]/.test(form.password), text: "One number" },
-    { met: /[^A-Za-z0-9]/.test(form.password), text: "One special character" },
-  ];
-
-  const handleChange = (field) => (e) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
-    if (error) setError("");
-  };
-
-  const validate = () => {
-    if (!form.name.trim()) return "Please enter your full name.";
-    if (form.name.trim().length < 2) return "Name must be at least 2 characters.";
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(form.email)) return "Please enter a valid email address.";
-
-    if (strength.score < 3)
-      return "Password is too weak. Please follow the requirements below.";
-    if (form.password !== form.confirmPassword) return "Passwords do not match.";
-    if (!agreed) return "You must agree to the Terms & Privacy Policy.";
-    return null;
-  };
-
-  const handleSubmit = async (e) => {
+  const onSubmit = async (e) => {
     e.preventDefault();
-    const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    const data = Object.fromEntries(new FormData(e.currentTarget));
+
+    if (password !== confirm) { setServerError("Passwords do not match."); return; }
+    if (!agreed) { setServerError("You must agree to the Terms & Privacy Policy."); return; }
 
     setLoading(true);
-    setError("");
-
+    setServerError("");
     try {
-      const { data, error: authError } = await signUp.email({
-        name: form.name.trim(),
-        email: form.email.trim().toLowerCase(),
-        password: form.password,
-        role: form.role,
+      const { error } = await signUp.email({
+        name: data.name.trim(),
+        email: data.email.trim().toLowerCase(),
+        password,
+        role,
       });
-
-      if (authError) {
-        setError(
-          authError.message?.includes("already")
-            ? "An account with this email already exists. Try signing in."
-            : authError.message || "Something went wrong. Please try again."
+      if (error) {
+        setServerError(
+          error.message?.toLowerCase().includes("already")
+            ? "An account with this email already exists."
+            : error.message || "Something went wrong."
         );
         return;
       }
-
-      setSuccess(true);
-      setTimeout(() => router.push("/dashboard"), 1500);
+      router.push("/auth/login");
+      router.refresh();
     } catch {
-      setError("Network error. Please check your connection.");
+      setServerError("Network error. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleOAuth = async (provider) => {
-    await signUp.social({ provider, callbackURL: "/dashboard" });
-  };
+  const surface = isLight
+    ? "border-gray-200 bg-gray-50 text-gray-900 hover:border-violet-400 focus:border-violet-500"
+    : "border-white/10 bg-white/5 text-white hover:border-violet-500/50 focus:border-violet-500";
 
-  if (success) {
-    return (
-      <div
-        className={`flex min-h-screen items-center justify-center ${
-          isLight ? "bg-white" : "bg-black"
-        }`}
-      >
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="text-center"
-        >
-          <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-green-500 to-emerald-600 shadow-xl shadow-green-500/30">
-            <HiCheckCircle className="h-10 w-10 text-white" />
-          </div>
-          <h2
-            className={`mb-2 text-2xl font-black ${
-              isLight ? "text-gray-900" : "text-white"
-            }`}
-          >
-            Account Created!
-          </h2>
-          <p className={`text-sm ${isLight ? "text-gray-500" : "text-gray-400"}`}>
-            Redirecting to your dashboard…
-          </p>
-        </motion.div>
-      </div>
-    );
-  }
+  const inputCls = `w-full rounded-xl border px-4 py-3 text-sm outline-none transition placeholder:text-gray-500 focus:ring-2 focus:ring-violet-500/20 ${surface}`;
+  const labelCls = `mb-1.5 block text-xs font-semibold ${isLight ? "text-gray-600" : "text-gray-400"}`;
 
   return (
-    <div
-      className={`relative flex min-h-screen overflow-hidden ${
-        isLight ? "bg-gray-50" : "bg-black"
-      }`}
-    >
-      {/* ── Left decorative panel ── */}
-      <div className="relative hidden w-[45%] flex-col justify-between overflow-hidden p-12 lg:flex">
-        <div className="pointer-events-none absolute inset-0">
-          <Image
-            src="/iamges/globe.png"
-            alt=""
-            fill
-            className="object-cover object-center opacity-40"
-            priority
-          />
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/90 via-violet-950/80 to-black/95" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,rgba(124,58,237,0.35),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_right,rgba(59,130,246,0.2),transparent_60%)]" />
+    <div className={`flex min-h-screen items-center justify-center px-4 py-16 ${isLight ? "bg-gray-50" : "bg-black"}`}>
+      <div className={`w-full max-w-md rounded-3xl border p-8 shadow-xl ${isLight ? "border-gray-200 bg-white" : "border-white/8 bg-[#0d0d0d]"}`}>
 
-        {/* Logo */}
-        <div className="relative">
-          <Link href="/">
-            <h2 className="text-3xl font-black">
-              <span className="bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                Next
-              </span>
-              <span className="bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
-                Hire
-              </span>
-            </h2>
-          </Link>
+        {/* Header */}
+        <div className="mb-8 text-center">
+          <h1 className={`mb-1 text-3xl font-black ${isLight ? "text-gray-900" : "text-white"}`}>
+            Create account
+          </h1>
+          <p className={`text-sm ${isLight ? "text-gray-500" : "text-gray-400"}`}>
+            Join NextHire and find your dream job
+          </p>
         </div>
 
-        {/* Center */}
-        <div className="relative space-y-8">
-          <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-4 py-2 text-sm text-violet-300">
-            <IoSparklesOutline className="h-3.5 w-3.5" />
-            Join 2M+ career professionals
-          </div>
-
-          <div>
-            <h1 className="mb-4 text-4xl font-black leading-tight text-white">
-              Start your{" "}
-              <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
-                dream career
-              </span>{" "}
-              journey
-            </h1>
-            <p className="text-lg leading-relaxed text-gray-400">
-              AI-powered job matching connects you with the perfect opportunities tailored to your skills.
-            </p>
-          </div>
-
-          {/* Feature highlights */}
-          <div className="space-y-4">
-            {[
-              { icon: "🎯", text: "AI matches jobs to your exact skills" },
-              { icon: "⚡", text: "One-click apply to hundreds of roles" },
-              { icon: "📊", text: "Real-time salary insights & negotiation tips" },
-              { icon: "🏆", text: "Interview coaching powered by AI" },
-            ].map((item) => (
-              <div key={item.text} className="flex items-center gap-3">
-                <span className="text-xl">{item.icon}</span>
-                <span className="text-sm text-gray-300">{item.text}</span>
-              </div>
-            ))}
-          </div>
+        {/* OAuth */}
+        <div className="mb-6 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={() => signUp.social({ provider: "google", callbackURL: "/dashboard" })}
+            className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-medium transition hover:scale-[1.01] ${
+              isLight ? "border-gray-200 bg-white text-gray-700 hover:bg-gray-50 shadow-sm" : "border-white/10 bg-white/5 text-white hover:bg-white/8"
+            }`}
+          >
+            <FcGoogle className="h-5 w-5" /> Google
+          </button>
+          <button
+            type="button"
+            onClick={() => signUp.social({ provider: "github", callbackURL: "/dashboard" })}
+            className={`flex items-center justify-center gap-2 rounded-xl border py-3 text-sm font-medium transition hover:scale-[1.01] ${
+              isLight ? "border-gray-200 bg-white text-gray-700 hover:bg-gray-50 shadow-sm" : "border-white/10 bg-white/5 text-white hover:bg-white/8"
+            }`}
+          >
+            <RiGithubFill className={`h-5 w-5 ${isLight ? "text-gray-800" : "text-white"}`} /> GitHub
+          </button>
         </div>
 
-        {/* Bottom */}
-        <div className="relative flex items-center gap-6 rounded-2xl border border-white/8 bg-white/5 p-5">
-          <div className="flex -space-x-2">
-            {["SC", "MW", "AP", "JR"].map((init, i) => (
-              <div
-                key={init}
-                className={`flex h-9 w-9 items-center justify-center rounded-full border-2 border-black text-xs font-bold text-white ${
-                  ["bg-violet-500", "bg-blue-500", "bg-pink-500", "bg-green-500"][i]
-                }`}
-              >
-                {init}
-              </div>
-            ))}
-          </div>
-          <div>
-            <p className="text-sm font-semibold text-white">
-              1,200+ hired this week
-            </p>
-            <p className="text-xs text-gray-500">Average time to hire: 9 days</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Right: form ── */}
-      <div
-        className={`flex flex-1 flex-col items-center justify-center overflow-y-auto px-6 py-12 lg:px-16 ${
-          isLight ? "bg-white" : "bg-[#080808]"
-        }`}
-      >
-        {/* Mobile logo */}
-        <div className="mb-8 lg:hidden">
-          <Link href="/">
-            <h2 className="text-3xl font-black">
-              <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
-                Next
-              </span>
-              <span className="bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
-                Hire
-              </span>
-            </h2>
-          </Link>
+        {/* Divider */}
+        <div className="mb-6 flex items-center gap-3">
+          <div className={`h-px flex-1 ${isLight ? "bg-gray-200" : "bg-white/8"}`} />
+          <span className={`text-xs ${isLight ? "text-gray-400" : "text-gray-600"}`}>or register with email</span>
+          <div className={`h-px flex-1 ${isLight ? "bg-gray-200" : "bg-white/8"}`} />
         </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="w-full max-w-md"
-        >
-          {/* Header */}
-          <div className="mb-8">
-            <h2
-              className={`mb-2 text-3xl font-black ${
-                isLight ? "text-gray-900" : "text-white"
-              }`}
-            >
-              Create account
-            </h2>
-            <p className={`text-sm ${isLight ? "text-gray-500" : "text-gray-400"}`}>
-              Already have an account?{" "}
-              <Link
-                href="/auth/login"
-                className="font-semibold text-violet-500 transition hover:text-violet-400"
-              >
-                Sign in
-              </Link>
-            </p>
+        {/* Server error */}
+        {serverError && (
+          <div className="mb-5 flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <HiExclamationCircle className="h-4 w-4 shrink-0" />
+            {serverError}
           </div>
+        )}
 
-          {/* OAuth */}
-          <div className="mb-6 grid grid-cols-2 gap-3">
-            <Button
-              variant="bordered"
-              onPress={() => handleOAuth("google")}
-              startContent={<FcGoogle className="h-5 w-5" />}
-              className={`font-medium ${
-                isLight
-                  ? "border-gray-200 text-gray-700 hover:bg-gray-50"
-                  : "border-white/10 text-white hover:bg-white/5"
-              }`}
-            >
-              Google
-            </Button>
-            <Button
-              variant="bordered"
-              onPress={() => handleOAuth("github")}
-              startContent={
-                <FaGithub
-                  className={`h-5 w-5 ${isLight ? "text-gray-800" : "text-white"}`}
-                />
-              }
-              className={`font-medium ${
-                isLight
-                  ? "border-gray-200 text-gray-700 hover:bg-gray-50"
-                  : "border-white/10 text-white hover:bg-white/5"
-              }`}
-            >
-              GitHub
-            </Button>
-          </div>
+        <Form className="space-y-4" onSubmit={onSubmit} validationBehavior="native">
 
-          {/* <Divider className={`mb-6 ${isLight ? "bg-gray-200" : "bg-white/8"}`}>
-            <span className={`px-3 text-xs ${isLight ? "text-gray-400" : "text-gray-600"}`}>
-              or register with email
-            </span>
-          </Divider> */}
-
-          {/* Error */}
-          <AnimatePresence>
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                className="mb-5 flex items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400"
-              >
-                <HiExclamationCircle className="h-4 w-4 shrink-0" />
-                {error}
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Role selector */}
-            <div
-              className={`rounded-2xl border p-4 ${
-                isLight ? "border-gray-200 bg-gray-50" : "border-white/8 bg-white/3"
-              }`}
-            >
-              <p
-                className={`mb-3 text-xs font-semibold uppercase tracking-wider ${
-                  isLight ? "text-gray-500" : "text-gray-500"
-                }`}
-              >
-                I am a…
-              </p>
-              <RadioGroup
-                value={form.role}
-                onValueChange={(val) =>
-                  setForm((prev) => ({ ...prev, role: val }))
-                }
-                orientation="horizontal"
-                classNames={{ wrapper: "gap-3" }}
-              >
-                <Radio
-                  value="job_seeker"
-                  classNames={{
-                    base: `flex-1 cursor-pointer rounded-xl border p-3 transition ${
-                      form.role === "job_seeker"
-                        ? "border-violet-500/60 bg-violet-500/10"
-                        : isLight
-                        ? "border-gray-200 hover:border-violet-300"
-                        : "border-white/8 hover:border-white/20"
-                    }`,
-                    label: `text-sm font-medium ${
-                      isLight ? "text-gray-700" : "text-gray-300"
-                    }`,
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <RiUserSearchFill className="h-4 w-4 text-violet-400" />
-                    Job Seeker
-                  </div>
-                </Radio>
-                <Radio
-                  value="recruiter"
-                  classNames={{
-                    base: `flex-1 cursor-pointer rounded-xl border p-3 transition ${
-                      form.role === "recruiter"
-                        ? "border-violet-500/60 bg-violet-500/10"
-                        : isLight
-                        ? "border-gray-200 hover:border-violet-300"
-                        : "border-white/8 hover:border-white/20"
-                    }`,
-                    label: `text-sm font-medium ${
-                      isLight ? "text-gray-700" : "text-gray-300"
-                    }`,
-                  }}
-                >
-                  <div className="flex items-center gap-2">
-                    <FaBriefcase className="h-4 w-4 text-blue-400" />
-                    Recruiter
-                  </div>
-                </Radio>
-              </RadioGroup>
-            </div>
-
-            {/* Name */}
-            <Input
-              label="Full name"
-              type="text"
-              placeholder="John Doe"
-              value={form.name}
-              onChange={handleChange("name")}
-              startContent={
-                <HiUser
-                  className={`h-4 w-4 ${isLight ? "text-gray-400" : "text-gray-500"}`}
-                />
-              }
-              variant="bordered"
-              classNames={{
-                label: `text-xs font-medium ${isLight ? "text-gray-600" : "text-gray-400"}`,
-                input: `${isLight ? "text-gray-900" : "text-white"} placeholder:text-gray-500`,
-                inputWrapper: `${
-                  isLight
-                    ? "border-gray-200 bg-gray-50 hover:border-violet-400 focus-within:border-violet-500"
-                    : "border-white/10 bg-white/4 hover:border-violet-500/50 focus-within:border-violet-500"
-                } transition`,
-              }}
-              isRequired
-              autoComplete="name"
-            />
-
-            {/* Email */}
-            <Input
-              label="Email address"
-              type="email"
-              placeholder="you@example.com"
-              value={form.email}
-              onChange={handleChange("email")}
-              startContent={
-                <HiEnvelope
-                  className={`h-4 w-4 ${isLight ? "text-gray-400" : "text-gray-500"}`}
-                />
-              }
-              variant="bordered"
-              classNames={{
-                label: `text-xs font-medium ${isLight ? "text-gray-600" : "text-gray-400"}`,
-                input: `${isLight ? "text-gray-900" : "text-white"} placeholder:text-gray-500`,
-                inputWrapper: `${
-                  isLight
-                    ? "border-gray-200 bg-gray-50 hover:border-violet-400 focus-within:border-violet-500"
-                    : "border-white/10 bg-white/4 hover:border-violet-500/50 focus-within:border-violet-500"
-                } transition`,
-              }}
-              isRequired
-              autoComplete="email"
-            />
-
-            {/* Password */}
-            <div className="space-y-2">
-              <Input
-                label="Password"
-                type={showPassword ? "text" : "password"}
-                placeholder="Create a strong password"
-                value={form.password}
-                onChange={handleChange("password")}
-                startContent={
-                  <HiLockClosed
-                    className={`h-4 w-4 ${isLight ? "text-gray-400" : "text-gray-500"}`}
-                  />
-                }
-                endContent={
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className={`transition ${
-                      isLight
-                        ? "text-gray-400 hover:text-gray-600"
-                        : "text-gray-500 hover:text-gray-300"
-                    }`}
-                  >
-                    {showPassword ? (
-                      <HiEyeSlash className="h-4 w-4" />
-                    ) : (
-                      <HiEye className="h-4 w-4" />
-                    )}
-                  </button>
-                }
-                variant="bordered"
-                classNames={{
-                  label: `text-xs font-medium ${isLight ? "text-gray-600" : "text-gray-400"}`,
-                  input: `${isLight ? "text-gray-900" : "text-white"} placeholder:text-gray-500`,
-                  inputWrapper: `${
-                    isLight
-                      ? "border-gray-200 bg-gray-50 hover:border-violet-400 focus-within:border-violet-500"
-                      : "border-white/10 bg-white/4 hover:border-violet-500/50 focus-within:border-violet-500"
-                  } transition`,
-                }}
-                isRequired
-                autoComplete="new-password"
-              />
-
-              {/* Strength bar */}
-              {form.password && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-2"
-                >
-                  <div className="flex gap-1.5">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div
-                        key={i}
-                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                          i <= strength.score ? strength.color : isLight ? "bg-gray-200" : "bg-white/8"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  {strength.label && (
-                    <p className={`text-right text-xs font-medium ${
-                      strength.score <= 1 ? "text-red-400" :
-                      strength.score === 2 ? "text-orange-400" :
-                      strength.score === 3 ? "text-yellow-400" : "text-green-400"
-                    }`}>
-                      {strength.label}
-                    </p>
-                  )}
-                  <ul className="space-y-1 pl-0.5">
-                    {rules.map((r) => (
-                      <Rule key={r.text} met={r.met} text={r.text} />
-                    ))}
-                  </ul>
-                </motion.div>
-              )}
-            </div>
-
-            {/* Confirm password */}
-            <Input
-              label="Confirm password"
-              type={showConfirm ? "text" : "password"}
-              placeholder="Re-enter your password"
-              value={form.confirmPassword}
-              onChange={handleChange("confirmPassword")}
-              startContent={
-                <HiLockClosed
-                  className={`h-4 w-4 ${isLight ? "text-gray-400" : "text-gray-500"}`}
-                />
-              }
-              endContent={
+          {/* Role picker */}
+          <div className={`rounded-2xl border p-3 ${isLight ? "border-gray-200 bg-gray-50" : "border-white/8 bg-white/3"}`}>
+            <p className={`mb-2.5 text-xs font-semibold uppercase tracking-wider ${isLight ? "text-gray-500" : "text-gray-500"}`}>I am a…</p>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { value: "job_seeker", icon: <RiUserSearchFill className="h-4 w-4 text-violet-400" />, label: "Job Seeker" },
+                { value: "recruiter",  icon: <RiBriefcaseFill  className="h-4 w-4 text-blue-400"   />, label: "Recruiter"  },
+              ].map((r) => (
                 <button
+                  key={r.value}
                   type="button"
-                  onClick={() => setShowConfirm(!showConfirm)}
-                  className={`transition ${
-                    isLight
-                      ? "text-gray-400 hover:text-gray-600"
-                      : "text-gray-500 hover:text-gray-300"
+                  onClick={() => setRole(r.value)}
+                  className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 text-sm font-medium transition ${
+                    role === r.value
+                      ? "border-violet-500/50 bg-violet-500/10 text-violet-300"
+                      : isLight
+                      ? "border-gray-200 text-gray-600 hover:border-violet-300"
+                      : "border-white/8 text-gray-400 hover:border-white/20"
                   }`}
                 >
-                  {showConfirm ? (
-                    <HiEyeSlash className="h-4 w-4" />
-                  ) : (
-                    <HiEye className="h-4 w-4" />
-                  )}
+                  {r.icon} {r.label}
                 </button>
-              }
-              isInvalid={
-                !!form.confirmPassword && form.password !== form.confirmPassword
-              }
-              errorMessage="Passwords do not match"
-              color={
-                form.confirmPassword && form.password === form.confirmPassword
-                  ? "success"
-                  : "default"
-              }
-              variant="bordered"
-              classNames={{
-                label: `text-xs font-medium ${isLight ? "text-gray-600" : "text-gray-400"}`,
-                input: `${isLight ? "text-gray-900" : "text-white"} placeholder:text-gray-500`,
-                inputWrapper: `${
-                  isLight
-                    ? "border-gray-200 bg-gray-50 hover:border-violet-400 focus-within:border-violet-500"
-                    : "border-white/10 bg-white/4 hover:border-violet-500/50 focus-within:border-violet-500"
-                } transition`,
-              }}
-              isRequired
-              autoComplete="new-password"
+              ))}
+            </div>
+          </div>
+
+          {/* Name */}
+          <TextField
+            isRequired
+            name="name"
+            type="text"
+            className="w-full"
+            validate={(v) => {
+              if (!v?.trim()) return "Full name is required.";
+              if (v.trim().length < 2) return "Name must be at least 2 characters.";
+            }}
+          >
+            <Label className={labelCls}>Full name</Label>
+            <div className="relative">
+              <HiUser className={`pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 ${isLight ? "text-gray-400" : "text-gray-500"}`} />
+              <Input placeholder="John Doe" autoComplete="name" className={`${inputCls} pl-10`} />
+            </div>
+            <FieldError className="mt-1.5 text-xs text-red-400" />
+          </TextField>
+
+          {/* Email */}
+          <TextField
+            isRequired
+            name="email"
+            type="email"
+            className="w-full"
+            validate={(v) => {
+              if (!v) return "Email is required.";
+              if (!/^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i.test(v))
+                return "Please enter a valid email address.";
+            }}
+          >
+            <Label className={labelCls}>Email address</Label>
+            <div className="relative">
+              <HiEnvelope className={`pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 ${isLight ? "text-gray-400" : "text-gray-500"}`} />
+              <Input placeholder="you@example.com" autoComplete="email" className={`${inputCls} pl-10`} />
+            </div>
+            <FieldError className="mt-1.5 text-xs text-red-400" />
+          </TextField>
+
+          {/* Password */}
+          <TextField
+            isRequired
+            name="password"
+            type={showPass ? "text" : "password"}
+            className="w-full"
+            onChange={(v) => setPassword(v)}
+            validate={(v) => {
+              if (!v) return "Password is required.";
+              if (v.length < 8) return "At least 8 characters required.";
+              if (!/[A-Z]/.test(v)) return "Must contain one uppercase letter.";
+              if (!/[0-9]/.test(v)) return "Must contain one number.";
+              if (!/[^A-Za-z0-9]/.test(v)) return "Must contain one special character.";
+            }}
+          >
+            <Label className={labelCls}>Password</Label>
+            <div className="relative">
+              <HiLockClosed className={`pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 ${isLight ? "text-gray-400" : "text-gray-500"}`} />
+              <Input placeholder="Create a strong password" autoComplete="new-password" className={`${inputCls} px-10`} />
+              <button
+                type="button"
+                onClick={() => setShowPass(!showPass)}
+                className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition ${isLight ? "text-gray-400 hover:text-gray-700" : "text-gray-500 hover:text-gray-300"}`}
+              >
+                {showPass ? <HiEyeSlash className="h-4 w-4" /> : <HiEye className="h-4 w-4" />}
+              </button>
+            </div>
+            <StrengthBar password={password} />
+            <FieldError className="mt-1.5 text-xs text-red-400" />
+          </TextField>
+
+          {/* Confirm password */}
+          <TextField
+            isRequired
+            name="confirm"
+            type={showConfirm ? "text" : "password"}
+            className="w-full"
+            onChange={(v) => setConfirm(v)}
+            validate={(v) => {
+              if (!v) return "Please confirm your password.";
+              if (v !== password) return "Passwords do not match.";
+            }}
+          >
+            <Label className={labelCls}>Confirm password</Label>
+            <div className="relative">
+              <HiLockClosed className={`pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 ${isLight ? "text-gray-400" : "text-gray-500"}`} />
+              <Input placeholder="Re-enter your password" autoComplete="new-password" className={`${inputCls} px-10`} />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className={`absolute right-3.5 top-1/2 -translate-y-1/2 transition ${isLight ? "text-gray-400 hover:text-gray-700" : "text-gray-500 hover:text-gray-300"}`}
+              >
+                {showConfirm ? <HiEyeSlash className="h-4 w-4" /> : <HiEye className="h-4 w-4" />}
+              </button>
+            </div>
+            <FieldError className="mt-1.5 text-xs text-red-400" />
+          </TextField>
+
+          {/* Terms checkbox */}
+          <label className="flex cursor-pointer items-start gap-2.5">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-violet-600"
             />
-
-            {/* Terms */}
-            <Checkbox
-              isSelected={agreed}
-              onValueChange={setAgreed}
-              size="sm"
-              classNames={{
-                base: "items-start",
-                label: `text-sm leading-relaxed ${
-                  isLight ? "text-gray-600" : "text-gray-400"
-                }`,
-                wrapper:
-                  "border-gray-300 dark:border-white/20 before:border-gray-300 dark:before:border-white/20 mt-0.5",
-              }}
-            >
+            <span className={`text-sm leading-relaxed ${isLight ? "text-gray-600" : "text-gray-400"}`}>
               I agree to the{" "}
-              <Link
-                href="/terms"
-                className="font-semibold text-violet-500 hover:text-violet-400"
-              >
-                Terms of Service
-              </Link>{" "}
-              and{" "}
-              <Link
-                href="/privacy"
-                className="font-semibold text-violet-500 hover:text-violet-400"
-              >
-                Privacy Policy
-              </Link>
-            </Checkbox>
+              <Link href="/terms" className="font-semibold text-violet-500 hover:text-violet-400">Terms</Link>
+              {" "}&amp;{" "}
+              <Link href="/privacy" className="font-semibold text-violet-500 hover:text-violet-400">Privacy Policy</Link>
+            </span>
+          </label>
 
-            {/* Submit */}
-            <Button
-              type="submit"
-              fullWidth
-              size="lg"
-              isLoading={loading}
-              isDisabled={!agreed}
-              endContent={!loading && <HiArrowRight className="h-4 w-4" />}
-              className="mt-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:scale-[1.02] hover:shadow-violet-500/40 disabled:opacity-50"
-            >
-              {loading ? "Creating account…" : "Create Account"}
-            </Button>
-          </form>
-        </motion.div>
+          <Button
+            type="submit"
+            isLoading={loading}
+            isDisabled={!agreed}
+            className="w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition hover:scale-[1.02] hover:shadow-violet-500/40 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {loading ? "Creating account…" : "Create Account"}
+          </Button>
+        </Form>
+
+        <p className={`mt-6 text-center text-sm ${isLight ? "text-gray-500" : "text-gray-400"}`}>
+          Already have an account?{" "}
+          <Link href="/auth/login" className="font-semibold text-violet-500 hover:text-violet-400 transition">
+            Sign in
+          </Link>
+        </p>
       </div>
     </div>
   );

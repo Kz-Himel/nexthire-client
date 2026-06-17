@@ -130,7 +130,7 @@ export default function FeaturedJobs() {
                         key={tag}
                         size="sm"
                         variant="flat"
-                        classNames={{
+                        className={{
                           base: `${isLight ? "bg-gray-100" : "bg-white/5"}`,
                           content: `text-[10px] ${isLight ? "text-gray-500" : "text-gray-400"}`,
                         }}
