@@ -38,10 +38,10 @@ export default function Navbar() {
         <Link href="/" className="flex items-center">
           <h1 className="text-4xl font-black tracking-tight">
             <span className="bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
-              Hire
+              Next
             </span>
             <span className="bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
-              Loop
+              Hire
             </span>
           </h1>
         </Link>
